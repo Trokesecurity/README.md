@@ -1,0 +1,2025 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HydroPulse Pro — Sistema Nacional de Monitoramento Aquático</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #04080f;
+  --bg2: #080e18;
+  --panel: rgba(8,18,32,0.92);
+  --border: rgba(0,180,200,0.18);
+  --border-bright: rgba(0,210,230,0.5);
+  --cyan: #00d4e8;
+  --cyan-dim: rgba(0,212,232,0.12);
+  --cyan-glow: rgba(0,212,232,0.35);
+  --green: #00e89a;
+  --green-dim: rgba(0,232,154,0.12);
+  --amber: #f5a623;
+  --amber-dim: rgba(245,166,35,0.15);
+  --red: #ff4757;
+  --red-dim: rgba(255,71,87,0.12);
+  --text: #c8dce8;
+  --text-dim: #5a7a8e;
+  --text-bright: #e8f4f8;
+  --mono: 'IBM Plex Mono', 'Space Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* --- scanline effect --- */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px);
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* --- HEADER --- */
+.sys-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 56px;
+  background: rgba(4,10,20,0.97);
+  border-bottom: 1px solid var(--border-bright);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo-block {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--cyan);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse-ring 2.5s ease-in-out infinite;
+}
+
+@keyframes pulse-ring {
+  0%,100% { box-shadow: 0 0 0 0 var(--cyan-glow); }
+  50% { box-shadow: 0 0 0 6px transparent; }
+}
+
+.logo-icon svg { width:16px; height:16px; fill: var(--cyan); }
+
+.logo-text { font-family: var(--mono); font-size: 1rem; font-weight:700; letter-spacing: 3px; color: var(--cyan); }
+.logo-sub { font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; }
+
+.header-status {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+}
+
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid;
+}
+
+.status-pill.online { border-color: var(--green); color: var(--green); }
+.status-pill.linked { border-color: var(--cyan); color: var(--cyan); }
+.status-pill.warning { border-color: var(--amber); color: var(--amber); }
+
+.status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  animation: blink 1.2s step-end infinite;
+}
+
+.online .status-dot { background: var(--green); }
+.linked .status-dot { background: var(--cyan); }
+.warning .status-dot { background: var(--amber); }
+
+@keyframes blink { 50% { opacity: 0; } }
+
+.clock { font-family: var(--mono); font-size: 0.75rem; color: var(--text-dim); }
+
+/* --- NAV TABS --- */
+.nav-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 24px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.tab-btn {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 6px 16px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.tab-btn:hover { color: var(--cyan); border-color: var(--border); }
+.tab-btn.active { color: var(--cyan); border-color: var(--border-bright); background: var(--cyan-dim); }
+
+.agency-badges {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+.agency-badge {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  padding: 3px 8px;
+  border-radius: 3px;
+  border: 1px solid;
+  letter-spacing: 1px;
+}
+
+.badge-ibama { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+.badge-ana { border-color: var(--cyan); color: var(--cyan); background: var(--cyan-dim); }
+.badge-icmbio { border-color: var(--amber); color: var(--amber); background: var(--amber-dim); }
+
+/* --- LAYOUT --- */
+.workspace {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  grid-template-rows: auto;
+  gap: 0;
+  height: calc(100vh - 56px - 41px);
+}
+
+.main-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow-y: auto;
+  padding: 16px;
+  gap: 16px;
+}
+
+.side-col {
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+/* --- PANELS --- */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.panel-header {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(0,0,0,0.2);
+}
+
+.panel-title {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-title::before {
+  content: '//';
+  color: var(--cyan);
+  opacity: 0.6;
+}
+
+.panel-body { padding: 16px; }
+
+/* --- VIEWPORT --- */
+.viewport-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: #010810;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.viewport-bg {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  opacity: 0.7;
+  filter: hue-rotate(180deg) saturate(0.6) brightness(0.6);
+}
+
+.hud-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Corner brackets */
+.hud-layer::before, .hud-layer::after {
+  content: '';
+  position: absolute;
+  width: 20px; height: 20px;
+  border-color: var(--cyan);
+  border-style: solid;
+  opacity: 0.8;
+}
+.hud-layer::before { top: 10px; left: 10px; border-width: 2px 0 0 2px; }
+.hud-layer::after  { bottom: 10px; right: 10px; border-width: 0 2px 2px 0; }
+
+.reticle {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  width: 50px; height: 50px;
+}
+
+.reticle-ring {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(0,212,232,0.6);
+  border-radius: 50%;
+  animation: reticle-spin 8s linear infinite;
+}
+
+.reticle-dot {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  width: 4px; height: 4px;
+  background: var(--cyan);
+  border-radius: 50%;
+}
+
+@keyframes reticle-spin {
+  to { transform: rotate(360deg); }
+}
+
+.hud-tl, .hud-tr, .hud-bl, .hud-br {
+  position: absolute;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: rgba(0,212,232,0.8);
+  line-height: 1.8;
+}
+.hud-tl { top: 14px; left: 40px; }
+.hud-tr { top: 14px; right: 40px; text-align: right; }
+.hud-bl { bottom: 14px; left: 40px; }
+.hud-br { bottom: 14px; right: 40px; text-align: right; }
+
+.rec-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: var(--red);
+}
+
+.rec-dot {
+  width: 7px; height: 7px;
+  background: var(--red);
+  border-radius: 50%;
+  animation: blink 0.9s step-end infinite;
+}
+
+/* depth line */
+.depth-bar {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 60%;
+  background: rgba(0,212,232,0.1);
+  border: 1px solid rgba(0,212,232,0.2);
+  border-radius: 1px;
+}
+
+.depth-fill {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  background: linear-gradient(to top, var(--cyan), transparent);
+  border-radius: 1px;
+  transition: height 1s;
+}
+
+/* --- SENSOR GRID --- */
+.sensor-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+
+.sensor {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 8px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s;
+}
+
+.sensor::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--cyan);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s;
+}
+
+.sensor.alert { border-color: var(--red); }
+.sensor.alert::after { background: var(--red); transform: scaleX(1); }
+.sensor.warn { border-color: var(--amber); }
+.sensor.warn::after { background: var(--amber); transform: scaleX(1); }
+.sensor.normal::after { transform: scaleX(1); }
+
+.sensor-label {
+  font-family: var(--mono);
+  font-size: 0.52rem;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.sensor-val {
+  font-family: var(--mono);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--cyan);
+  display: block;
+  line-height: 1;
+  transition: color 0.3s;
+}
+
+.sensor.alert .sensor-val { color: var(--red); }
+.sensor.warn .sensor-val { color: var(--amber); }
+
+.sensor-unit {
+  font-size: 0.55rem;
+  color: var(--text-dim);
+  margin-top: 3px;
+  display: block;
+}
+
+/* --- CHARTS --- */
+.charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+canvas.sparkline {
+  width: 100%;
+  height: 60px;
+  display: block;
+}
+
+.chart-label {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+/* --- SIDE PANEL --- */
+.side-section {
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* --- CONTROLS --- */
+.nav-cross {
+  display: grid;
+  grid-template-columns: repeat(3, 44px);
+  grid-template-rows: repeat(3, 44px);
+  gap: 4px;
+  margin: 12px auto;
+  width: fit-content;
+}
+
+.ctrl-btn {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ctrl-btn:hover { border-color: var(--cyan); color: var(--cyan); background: var(--cyan-dim); }
+.ctrl-btn:active { background: var(--cyan); color: #000; transform: scale(0.95); }
+.ctrl-btn.center { opacity: 0.2; cursor: default; }
+
+.action-btns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 0 16px 16px;
+}
+
+.act-btn {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 8px 4px;
+  border-radius: 5px;
+  cursor: pointer;
+  border: 1px solid;
+  transition: all 0.2s;
+  background: transparent;
+}
+
+.act-btn.cyan { border-color: var(--border-bright); color: var(--cyan); }
+.act-btn.cyan:hover { background: var(--cyan-dim); }
+.act-btn.amber { border-color: var(--amber); color: var(--amber); }
+.act-btn.amber:hover { background: var(--amber-dim); }
+.act-btn.red { border-color: var(--red); color: var(--red); }
+.act-btn.red:hover { background: var(--red-dim); }
+.act-btn.green { border-color: var(--green); color: var(--green); }
+.act-btn.green:hover { background: var(--green-dim); }
+
+/* --- CONSOLE --- */
+.console-box {
+  background: #020608;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  padding: 10px;
+  height: 160px;
+  overflow-y: auto;
+  line-height: 1.7;
+  border-top: 1px solid var(--border);
+}
+
+.log-line { color: var(--green); }
+.log-line.warn { color: var(--amber); }
+.log-line.err { color: var(--red); }
+.log-line.info { color: var(--cyan); }
+.log-line.sys { color: var(--text-dim); }
+.log-ts { color: var(--text-dim); margin-right: 6px; }
+
+/* --- AGENCY PANELS --- */
+.agency-panel {
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.agency-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(0,0,0,0.2);
+}
+
+.agency-logo {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.agency-status-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
+}
+
+.agency-metric {
+  background: var(--panel);
+  padding: 8px 12px;
+}
+
+.agency-metric-label {
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.agency-metric-val {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+/* --- COMPLIANCE --- */
+.compliance-bar {
+  height: 4px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 2px;
+  margin-top: 6px;
+  overflow: hidden;
+}
+
+.compliance-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 1s;
+}
+
+/* --- SPECIES TABLE --- */
+.species-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.72rem;
+}
+
+.species-table th {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.species-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(0,180,200,0.07);
+  vertical-align: middle;
+}
+
+.species-table tr:hover td { background: var(--cyan-dim); }
+
+.sci-name { font-style: italic; color: var(--cyan); font-size: 0.68rem; }
+.pop-name { color: var(--text); font-size: 0.72rem; }
+
+.status-tag {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  letter-spacing: 1px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  border: 1px solid;
+  text-transform: uppercase;
+}
+
+.tag-lc  { border-color: var(--green); color: var(--green); }
+.tag-nt  { border-color: #b8e06a; color: #b8e06a; }
+.tag-vu  { border-color: var(--amber); color: var(--amber); }
+.tag-en  { border-color: #ff8c42; color: #ff8c42; }
+.tag-cr  { border-color: var(--red); color: var(--red); }
+.tag-new { border-color: var(--cyan); color: var(--cyan); }
+
+/* --- ALERTS --- */
+.alert-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.alert-icon {
+  font-size: 0.9rem;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+.alert-text { flex: 1; }
+.alert-title { font-size: 0.72rem; font-weight: 600; color: var(--text-bright); }
+.alert-desc { font-family: var(--mono); font-size: 0.6rem; color: var(--text-dim); margin-top: 2px; }
+.alert-time { font-family: var(--mono); font-size: 0.58rem; color: var(--text-dim); }
+
+/* --- TABS --- */
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* --- REPORT MODAL --- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(6px);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  display: none;
+}
+
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: #06111e;
+  border: 1px solid var(--border-bright);
+  border-radius: 10px;
+  width: 600px;
+  max-width: 95vw;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-title {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 2px;
+  color: var(--cyan);
+  text-transform: uppercase;
+}
+
+.modal-close {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  width: 28px; height: 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+
+.modal-close:hover { border-color: var(--red); color: var(--red); }
+
+.modal-body { padding: 20px; }
+
+.report-field {
+  margin-bottom: 14px;
+}
+
+.field-label {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 5px;
+  display: block;
+}
+
+.field-input {
+  width: 100%;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  padding: 8px 12px;
+  border-radius: 5px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.field-input:focus { border-color: var(--cyan); }
+
+.field-select {
+  width: 100%;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  padding: 8px 12px;
+  border-radius: 5px;
+  outline: none;
+  appearance: none;
+}
+
+.field-select:focus { border-color: var(--cyan); }
+
+.modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+.data-snapshot {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 14px;
+}
+
+.snapshot-row {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.snapshot-key { color: var(--text-dim); }
+.snapshot-val { color: var(--cyan); }
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+}
+
+.modal-btn {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 9px 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  border: 1px solid;
+  transition: all 0.2s;
+  background: transparent;
+}
+
+.modal-btn.primary { border-color: var(--cyan); color: var(--cyan); }
+.modal-btn.primary:hover { background: var(--cyan); color: #000; }
+.modal-btn.secondary { border-color: var(--border); color: var(--text-dim); }
+.modal-btn.secondary:hover { border-color: var(--text-dim); color: var(--text); }
+.modal-btn.danger { border-color: var(--red); color: var(--red); }
+
+/* --- MISC --- */
+.section-divider {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  padding: 10px 16px 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.scrollable { overflow-y: auto; }
+
+.empty-state {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  font-family: var(--mono);
+}
+
+input[type=range] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+  margin: 8px 0;
+}
+
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--cyan);
+  cursor: pointer;
+}
+
+.thruster-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 0 16px 12px;
+}
+
+.thruster-item label {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.thruster-item label span { color: var(--cyan); }
+
+/* alerts section */
+#tab-alertas .alert-item:nth-child(1) .alert-icon { color: var(--red); }
+#tab-alertas .alert-item:nth-child(2) .alert-icon { color: var(--amber); }
+#tab-alertas .alert-item:nth-child(3) .alert-icon { color: var(--cyan); }
+
+</style>
+</head>
+<body>
+
+<!-- ══════════ HEADER ══════════ -->
+<header class="sys-header">
+  <div class="logo-block">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+    </div>
+    <div>
+      <div class="logo-text">HYDRO·PULSE PRO</div>
+      <div class="logo-sub">Sistema Nacional de Monitoramento Aquático — v3.1.2</div>
+    </div>
+  </div>
+
+  <div class="header-status">
+    <div class="status-pill online"><div class="status-dot"></div>DRONE ONLINE</div>
+    <div class="status-pill linked"><div class="status-dot"></div>API IBAMA</div>
+    <div class="status-pill linked"><div class="status-dot"></div>API ANA</div>
+    <div class="status-pill linked"><div class="status-dot"></div>ICMBIO</div>
+    <div class="clock" id="sys-clock">--:--:--</div>
+  </div>
+</header>
+
+<!-- ══════════ NAV ══════════ -->
+<nav class="nav-tabs">
+  <button class="tab-btn active" onclick="switchTab('operacoes', this)">Operações</button>
+  <button class="tab-btn" onclick="switchTab('biologia', this)">Catálogo Biológico</button>
+  <button class="tab-btn" onclick="switchTab('qualidade', this)">Qualidade da Água</button>
+  <button class="tab-btn" onclick="switchTab('alertas', this)">Alertas <span id="badge-alert" style="background:var(--red);color:#000;border-radius:10px;padding:0 5px;font-size:0.7em;margin-left:4px;">3</span></button>
+  <button class="tab-btn" onclick="switchTab('relatorios', this)">Relatórios</button>
+
+  <div class="agency-badges">
+    <span class="agency-badge badge-ibama">IBAMA</span>
+    <span class="agency-badge badge-ana">ANA</span>
+    <span class="agency-badge badge-icmbio">ICMBio</span>
+  </div>
+</nav>
+
+<!-- ══════════ MAIN WORKSPACE ══════════ -->
+
+<!-- TAB: OPERAÇÕES -->
+<div id="tab-operacoes" class="tab-content active">
+<div class="workspace">
+  <div class="main-col">
+
+    <!-- Viewport -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Feed de Câmera — Canal 1 (4K HDR)</span>
+        <span style="display:flex;gap:10px;align-items:center;">
+          <span class="rec-badge"><span class="rec-dot"></span>REC LIVE</span>
+          <span style="font-family:var(--mono);font-size:0.6rem;color:var(--text-dim)">MISSÃO #0042 · RESERVA PANTANAL-SUL</span>
+        </span>
+      </div>
+      <div class="panel-body" style="padding:12px;">
+        <div class="viewport-wrap">
+          <img class="viewport-bg" src="https://images.unsplash.com/photo-1582967788606-a171c1080cb0?auto=format&fit=crop&w=1200&q=80" alt="Deep sea feed">
+          
+          <div class="hud-layer">
+            <!-- Reticle -->
+            <div class="reticle">
+              <div class="reticle-ring"></div>
+              <div class="reticle-dot"></div>
+            </div>
+
+            <!-- HUD corners -->
+            <div class="hud-tl">
+              PROF: <span id="hud-depth">450.3</span>m<br>
+              GPS: <span id="hud-gps">-15.7801°S 56.0972°W</span><br>
+              BARO: <span id="hud-baro">45.4</span> atm
+            </div>
+            <div class="hud-tr">
+              <span class="rec-badge"><span class="rec-dot"></span>REC</span><br>
+              CODEC: H.265<br>
+              FPS: 60
+            </div>
+            <div class="hud-bl">
+              TEMP: <span id="hud-temp">4.2</span>°C<br>
+              SAL: <span id="hud-sal">34.8</span> PSU<br>
+              DO₂: <span id="hud-o2">6.3</span> mg/L
+            </div>
+            <div class="hud-br">
+              MISSÃO: <span id="hud-time">00:43:17</span><br>
+              BAT: <span id="hud-bat">87</span>%<br>
+              LINK: <span style="color:var(--green)">FORTE</span>
+            </div>
+
+            <!-- Depth bar -->
+            <div class="depth-bar">
+              <div class="depth-fill" id="depth-fill" style="height:60%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sensor Grid -->
+        <div class="sensor-grid">
+          <div class="sensor normal" id="s-depth">
+            <span class="sensor-label">Profundidade</span>
+            <span class="sensor-val" id="sv-depth">450.3</span>
+            <span class="sensor-unit">metros</span>
+          </div>
+          <div class="sensor normal" id="s-temp">
+            <span class="sensor-label">Temperatura</span>
+            <span class="sensor-val" id="sv-temp">4.2</span>
+            <span class="sensor-unit">°C</span>
+          </div>
+          <div class="sensor normal" id="s-o2">
+            <span class="sensor-label">Oxigênio Diss.</span>
+            <span class="sensor-val" id="sv-o2">6.3</span>
+            <span class="sensor-unit">mg/L</span>
+          </div>
+          <div class="sensor normal" id="s-sal">
+            <span class="sensor-label">Salinidade</span>
+            <span class="sensor-val" id="sv-sal">34.8</span>
+            <span class="sensor-unit">PSU</span>
+          </div>
+          <div class="sensor warn" id="s-turb">
+            <span class="sensor-label">Turbidez</span>
+            <span class="sensor-val" id="sv-turb">18.4</span>
+            <span class="sensor-unit">NTU</span>
+          </div>
+          <div class="sensor normal" id="s-ph">
+            <span class="sensor-label">pH</span>
+            <span class="sensor-val" id="sv-ph">7.4</span>
+            <span class="sensor-unit">adimensional</span>
+          </div>
+          <div class="sensor normal" id="s-cond">
+            <span class="sensor-label">Condutiv.</span>
+            <span class="sensor-val" id="sv-cond">52.1</span>
+            <span class="sensor-unit">μS/cm</span>
+          </div>
+          <div class="sensor normal" id="s-baro">
+            <span class="sensor-label">Pressão</span>
+            <span class="sensor-val" id="sv-baro">45.4</span>
+            <span class="sensor-unit">atm</span>
+          </div>
+          <div class="sensor normal" id="s-bat">
+            <span class="sensor-label">Bateria</span>
+            <span class="sensor-val" id="sv-bat">87.0</span>
+            <span class="sensor-unit">%</span>
+          </div>
+          <div class="sensor normal" id="s-orp">
+            <span class="sensor-label">ORP</span>
+            <span class="sensor-val" id="sv-orp">+182</span>
+            <span class="sensor-unit">mV</span>
+          </div>
+          <div class="sensor normal" id="s-tds">
+            <span class="sensor-label">TDS</span>
+            <span class="sensor-val" id="sv-tds">330</span>
+            <span class="sensor-unit">ppm</span>
+          </div>
+          <div class="sensor normal" id="s-no3">
+            <span class="sensor-label">Nitrato</span>
+            <span class="sensor-val" id="sv-no3">2.1</span>
+            <span class="sensor-unit">mg/L NO₃</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="charts-row">
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">Temperatura — Últimos 60s</span></div>
+        <div class="panel-body" style="padding:10px 12px;">
+          <canvas id="chart-temp" class="sparkline" height="60"></canvas>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">Oxigênio Dissolvido — Últimos 60s</span></div>
+        <div class="panel-body" style="padding:10px 12px;">
+          <canvas id="chart-o2" class="sparkline" height="60"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main-col -->
+
+  <!-- SIDE COLUMN -->
+  <aside class="side-col">
+
+    <!-- Navigation Controls -->
+    <div class="side-section">
+      <div class="section-divider">Controle de Navegação</div>
+      <div class="nav-cross">
+        <div></div>
+        <button class="ctrl-btn" title="Norte" onmousedown="cmd('N')" onkeydown="">↑</button>
+        <div></div>
+        <button class="ctrl-btn" title="Oeste" onmousedown="cmd('O')">←</button>
+        <div class="ctrl-btn center">✕</div>
+        <button class="ctrl-btn" title="Leste" onmousedown="cmd('L')">→</button>
+        <div></div>
+        <button class="ctrl-btn" title="Sul" onmousedown="cmd('S')">↓</button>
+        <div></div>
+      </div>
+      <div class="thruster-grid">
+        <div class="thruster-item">
+          <label>Imersão <span id="th-imersao">0</span>%</label>
+          <input type="range" min="-100" max="100" value="0" oninput="thruster('imersao',this.value)">
+        </div>
+        <div class="thruster-item">
+          <label>Impulso <span id="th-impulso">0</span>%</label>
+          <input type="range" min="0" max="100" value="0" oninput="thruster('impulso',this.value)">
+        </div>
+      </div>
+      <div class="action-btns">
+        <button class="act-btn cyan" onclick="toggleLight()">💡 Lanternas</button>
+        <button class="act-btn cyan" onclick="captureSnapshot()">📷 Captura</button>
+        <button class="act-btn amber" onclick="openReport()">📋 Laudo IBAMA</button>
+        <button class="act-btn green" onclick="logSpecies()">🐟 Registrar Fauna</button>
+        <button class="act-btn red" onclick="emergencySurface()" style="grid-column:1/span 2;">⚠ EMERGÊNCIA — RETORNO SUPERFÍCIE</button>
+      </div>
+    </div>
+
+    <!-- IBAMA Integration -->
+    <div class="side-section">
+      <div class="section-divider">Integração IBAMA / ANA</div>
+      <div style="padding:0 16px 12px;">
+        <div class="agency-panel">
+          <div class="agency-header">
+            <div class="agency-logo" style="color:var(--green)">IBAMA</div>
+            <div style="font-size:0.6rem;font-family:var(--mono);color:var(--text-dim);margin-left:auto;">Processo nº 02001.042873/2024</div>
+          </div>
+          <div class="agency-status-row">
+            <div class="agency-metric">
+              <div class="agency-metric-label">Status AIA</div>
+              <div class="agency-metric-val" style="color:var(--green)">APROVADO</div>
+            </div>
+            <div class="agency-metric">
+              <div class="agency-metric-label">Próxima Transmissão</div>
+              <div class="agency-metric-val" style="color:var(--cyan)" id="ibama-next">23:00</div>
+            </div>
+            <div class="agency-metric">
+              <div class="agency-metric-label">Conformidade Ambiental</div>
+              <div class="agency-metric-val" style="color:var(--green)" id="ibama-comp">97.3%</div>
+              <div class="compliance-bar"><div class="compliance-fill" style="width:97.3%;background:var(--green)"></div></div>
+            </div>
+            <div class="agency-metric">
+              <div class="agency-metric-label">Espécies Protegidas</div>
+              <div class="agency-metric-val" style="color:var(--amber)">2 detectadas</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="agency-panel">
+          <div class="agency-header">
+            <div class="agency-logo" style="color:var(--cyan)">ANA</div>
+            <div style="font-size:0.6rem;font-family:var(--mono);color:var(--text-dim);margin-left:auto;">Outorga nº PB-0001-46513/2023</div>
+          </div>
+          <div class="agency-status-row">
+            <div class="agency-metric">
+              <div class="agency-metric-label">Índice IQA</div>
+              <div class="agency-metric-val" style="color:var(--amber)" id="ana-iqa">62 — BOM</div>
+            </div>
+            <div class="agency-metric">
+              <div class="agency-metric-label">Classe CONAMA</div>
+              <div class="agency-metric-val" style="color:var(--cyan)">CLASSE II</div>
+            </div>
+            <div class="agency-metric">
+              <div class="agency-metric-label">Limite pH (6–9)</div>
+              <div class="agency-metric-val" style="color:var(--green)" id="ph-status">✓ CONFORME</div>
+            </div>
+            <div class="agency-metric">
+              <div class="agency-metric-label">Limite DO₂ (&gt;5)</div>
+              <div class="agency-metric-val" style="color:var(--green)" id="o2-status">✓ CONFORME</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="agency-panel">
+          <div class="agency-header">
+            <div class="agency-logo" style="color:var(--amber)">ICMBio</div>
+            <div style="font-size:0.6rem;font-family:var(--mono);color:var(--text-dim);margin-left:auto;">UC: PARNA Pantanal Matogrossense</div>
+          </div>
+          <div class="agency-status-row">
+            <div class="agency-metric">
+              <div class="agency-metric-label">Zona de Operação</div>
+              <div class="agency-metric-val" style="color:var(--green)">ÁREA PERMITIDA</div>
+            </div>
+            <div class="agency-metric">
+              <div class="agency-metric-label">Avistamentos Hoje</div>
+              <div class="agency-metric-val" style="color:var(--cyan)">7 registros</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Console -->
+    <div class="side-section" style="border-bottom:none;flex:1;">
+      <div class="section-divider">Console AURELIA — IA Embarcada</div>
+      <div class="console-box" id="console-box">
+        <div class="log-line sys"><span class="log-ts">[--:--:--]</span>Sistema HydroPulse Pro v3.1.2 inicializado</div>
+        <div class="log-line sys"><span class="log-ts">[--:--:--]</span>Conexão estabelecida: IBAMA API v2 · ANA DataHub · ICMBio SISBIO</div>
+        <div class="log-line info"><span class="log-ts">[--:--:--]</span>Autenticação OAuth2 concluída para todos os órgãos</div>
+        <div class="log-line"><span class="log-ts">[--:--:--]</span>Sensores calibrados — 12 canais ativos</div>
+        <div class="log-line warn"><span class="log-ts">[--:--:--]</span>ATENÇÃO: Turbidez acima do limiar (18.4 NTU > 15.0)</div>
+        <div class="log-line"><span class="log-ts">[--:--:--]</span>Aguardando telemetria...</div>
+      </div>
+    </div>
+
+  </aside>
+</div>
+</div><!-- /tab-operacoes -->
+
+<!-- TAB: CATÁLOGO BIOLÓGICO -->
+<div id="tab-biologia" class="tab-content" style="padding:20px;max-width:1400px;margin:auto;">
+  <div style="display:grid;grid-template-columns:1fr 320px;gap:16px;">
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Registro de Fauna Aquática — SISBIO/ICMBio</span>
+        <div style="display:flex;gap:8px;">
+          <button class="act-btn cyan" onclick="logSpecies()" style="padding:4px 12px;font-size:0.58rem;">+ Novo Registro</button>
+          <button class="act-btn amber" onclick="exportBio()" style="padding:4px 12px;font-size:0.58rem;">↓ Export CSV</button>
+        </div>
+      </div>
+      <div class="panel-body" style="padding:0;">
+        <table class="species-table" id="species-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nome Popular</th>
+              <th>Nome Científico</th>
+              <th>Família</th>
+              <th>Status IUCN</th>
+              <th>Indivíduos</th>
+              <th>Profundidade</th>
+              <th>Horário</th>
+            </tr>
+          </thead>
+          <tbody id="species-tbody">
+            <tr>
+              <td style="color:var(--text-dim);font-family:var(--mono);font-size:0.65rem;">001</td>
+              <td><span class="pop-name">Peixe-Lanterna</span></td>
+              <td><span class="sci-name">Myctophum punctatum</span></td>
+              <td style="font-size:0.65rem;color:var(--text-dim)">Myctophidae</td>
+              <td><span class="status-tag tag-lc">LC</span></td>
+              <td style="font-family:var(--mono);font-size:0.72rem;">3</td>
+              <td style="font-family:var(--mono);font-size:0.72rem;">420–460 m</td>
+              <td style="font-family:var(--mono);font-size:0.65rem;color:var(--text-dim)">14:23:11</td>
+            </tr>
+            <tr>
+              <td style="color:var(--text-dim);font-family:var(--mono);font-size:0.65rem;">002</td>
+              <td><span class="pop-name">Lula Gigante</span></td>
+              <td><span class="sci-name">Architeuthis dux</span></td>
+              <td style="font-size:0.65rem;color:var(--text-dim)">Architeuthidae</td>
+              <td><span class="status-tag tag-vu">VU</span></td>
+              <td style="font-family:var(--mono);font-size:0.72rem;">1</td>
+              <td style="font-family:var(--mono);font-size:0.72rem;">440–455 m</td>
+              <td style="font-family:var(--mono);font-size:0.65rem;color:var(--text-dim)">14:31:05</td>
+            </tr>
+            <tr>
+              <td style="color:var(--text-dim);font-family:var(--mono);font-size:0.65rem;">003</td>
+              <td><span class="pop-name">Camarão-abissal</span></td>
+              <td><span class="sci-name">Acanthephyra purpurea</span></td>
+              <td style="font-size:0.65rem;color:var(--text-dim)">Oplophoridae</td>
+              <td><span class="status-tag tag-lc">LC</span></td>
+              <td style="font-family:var(--mono);font-size:0.72rem;">12</td>
+              <td style="font-family:var(--mono);font-size:0.72rem;">448 m</td>
+              <td style="font-family:var(--mono);font-size:0.65rem;color:var(--text-dim)">14:38:44</td>
+            </tr>
+            <tr>
+              <td style="color:var(--text-dim);font-family:var(--mono);font-size:0.65rem;">004</td>
+              <td><span class="pop-name">Tubarão-duende</span></td>
+              <td><span class="sci-name">Mitsukurina owstoni</span></td>
+              <td style="font-size:0.65rem;color:var(--text-dim)">Mitsukurinidae</td>
+              <td><span class="status-tag tag-vu">VU</span></td>
+              <td style="font-family:var(--mono);font-size:0.72rem;">1</td>
+              <td style="font-family:var(--mono);font-size:0.72rem;">450 m</td>
+              <td style="font-family:var(--mono);font-size:0.65rem;color:var(--text-dim)">14:52:30</td>
+            </tr>
+            <tr>
+              <td style="color:var(--text-dim);font-family:var(--mono);font-size:0.65rem;">005</td>
+              <td><span class="pop-name">Peixe-espada</span></td>
+              <td><span class="sci-name">Lepidopus caudatus</span></td>
+              <td style="font-size:0.65rem;color:var(--text-dim)">Trichiuridae</td>
+              <td><span class="status-tag tag-nt">NT</span></td>
+              <td style="font-family:var(--mono);font-size:0.72rem;">2</td>
+              <td style="font-family:var(--mono);font-size:0.72rem;">430–445 m</td>
+              <td style="font-family:var(--mono);font-size:0.65rem;color:var(--text-dim)">15:01:58</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <!-- IUCN Legend -->
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">Categorias IUCN / MMA</span></div>
+        <div class="panel-body" style="padding:12px;">
+          <div style="display:flex;flex-direction:column;gap:8px;font-size:0.7rem;">
+            <div style="display:flex;align-items:center;gap:8px;"><span class="status-tag tag-lc">LC</span> Pouco Preocupante</div>
+            <div style="display:flex;align-items:center;gap:8px;"><span class="status-tag tag-nt">NT</span> Quase Ameaçada</div>
+            <div style="display:flex;align-items:center;gap:8px;"><span class="status-tag tag-vu">VU</span> Vulnerável</div>
+            <div style="display:flex;align-items:center;gap:8px;"><span class="status-tag tag-en">EN</span> Em Perigo</div>
+            <div style="display:flex;align-items:center;gap:8px;"><span class="status-tag tag-cr">CR</span> Criticamente em Perigo</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">Estatísticas da Missão</span></div>
+        <div class="panel-body" style="padding:12px;">
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div>
+              <div style="font-family:var(--mono);font-size:0.58rem;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;">Espécies Registradas</div>
+              <div style="font-family:var(--mono);font-size:1.8rem;font-weight:700;color:var(--cyan)" id="stat-species">5</div>
+            </div>
+            <div>
+              <div style="font-family:var(--mono);font-size:0.58rem;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;">Ameaçadas (VU+)</div>
+              <div style="font-family:var(--mono);font-size:1.8rem;font-weight:700;color:var(--amber)">3</div>
+            </div>
+            <div>
+              <div style="font-family:var(--mono);font-size:0.58rem;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;">Indivíduos Observados</div>
+              <div style="font-family:var(--mono);font-size:1.8rem;font-weight:700;color:var(--green)">19</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notification to SISBIO -->
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">Notificação SISBIO</span></div>
+        <div class="panel-body" style="padding:12px;">
+          <p style="font-size:0.72rem;color:var(--text-dim);line-height:1.6;margin-bottom:10px;">2 espécies ameaçadas detectadas nesta missão. Notificação automática enviada ao SISBIO às 14:52.</p>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="display:flex;align-items:center;gap:8px;font-size:0.68rem;">
+              <span style="color:var(--green)">✓</span> <span>Lula Gigante — Transmitido</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:0.68rem;">
+              <span style="color:var(--green)">✓</span> <span>Tubarão-Duende — Transmitido</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- TAB: QUALIDADE DA ÁGUA -->
+<div id="tab-qualidade" class="tab-content" style="padding:20px;max-width:1400px;margin:auto;">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">Parâmetros vs Resolução CONAMA 357/2005</span></div>
+      <div class="panel-body" style="padding:0;">
+        <table class="species-table">
+          <thead>
+            <tr>
+              <th>Parâmetro</th>
+              <th>Medido</th>
+              <th>Limite (Cl. II)</th>
+              <th>Status</th>
+              <th>Margem</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr id="qrow-ph">
+              <td>pH</td>
+              <td style="font-family:var(--mono)" id="q-ph">7.4</td>
+              <td style="font-family:var(--mono);color:var(--text-dim)">6.0 – 9.0</td>
+              <td><span class="status-tag tag-lc">CONFORME</span></td>
+              <td style="font-family:var(--mono);font-size:0.68rem;color:var(--green)">+1.4 / -1.4</td>
+            </tr>
+            <tr id="qrow-o2">
+              <td>Oxigênio Dissolvido</td>
+              <td style="font-family:var(--mono)" id="q-o2">6.3 mg/L</td>
+              <td style="font-family:var(--mono);color:var(--text-dim)">≥ 5 mg/L</td>
+              <td><span class="status-tag tag-lc">CONFORME</span></td>
+              <td style="font-family:var(--mono);font-size:0.68rem;color:var(--green)">+1.3 mg/L</td>
+            </tr>
+            <tr id="qrow-turb">
+              <td>Turbidez</td>
+              <td style="font-family:var(--mono)" id="q-turb">18.4 NTU</td>
+              <td style="font-family:var(--mono);color:var(--text-dim)">≤ 15 NTU</td>
+              <td><span class="status-tag tag-en">VIOLAÇÃO</span></td>
+              <td style="font-family:var(--mono);font-size:0.68rem;color:var(--red)">+3.4 NTU</td>
+            </tr>
+            <tr>
+              <td>Nitrato</td>
+              <td style="font-family:var(--mono)" id="q-no3">2.1 mg/L</td>
+              <td style="font-family:var(--mono);color:var(--text-dim)">≤ 10 mg/L</td>
+              <td><span class="status-tag tag-lc">CONFORME</span></td>
+              <td style="font-family:var(--mono);font-size:0.68rem;color:var(--green)">-7.9 mg/L</td>
+            </tr>
+            <tr>
+              <td>Condutividade</td>
+              <td style="font-family:var(--mono)">52.1 μS/cm</td>
+              <td style="font-family:var(--mono);color:var(--text-dim)">≤ 100 μS/cm</td>
+              <td><span class="status-tag tag-lc">CONFORME</span></td>
+              <td style="font-family:var(--mono);font-size:0.68rem;color:var(--green)">-47.9</td>
+            </tr>
+            <tr>
+              <td>Temperatura</td>
+              <td style="font-family:var(--mono)" id="q-temp">4.2°C</td>
+              <td style="font-family:var(--mono);color:var(--text-dim)">Δ ≤ 3°C natural</td>
+              <td><span class="status-tag tag-lc">CONFORME</span></td>
+              <td style="font-family:var(--mono);font-size:0.68rem;color:var(--green)">OK</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">Índice de Qualidade da Água (IQA–ANA)</span></div>
+        <div class="panel-body" style="padding:16px;">
+          <div style="display:flex;align-items:center;gap:20px;">
+            <div style="text-align:center;">
+              <div style="font-family:var(--mono);font-size:3rem;font-weight:700;color:var(--amber)" id="iqa-val">62</div>
+              <div style="font-family:var(--mono);font-size:0.6rem;color:var(--text-dim);letter-spacing:2px;">PONTOS</div>
+            </div>
+            <div style="flex:1;">
+              <div style="font-size:1rem;font-weight:600;color:var(--amber);margin-bottom:6px;">BOA</div>
+              <div class="compliance-bar" style="height:8px;background:linear-gradient(to right,var(--red),var(--amber),var(--green));">
+                <div style="width:2px;height:12px;background:#fff;margin-top:-2px;position:relative;" id="iqa-marker"></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:0.55rem;color:var(--text-dim);margin-top:4px;">
+                <span>0 – Péssima</span><span>36 – Ruim</span><span>51 – Regular</span><span>71 – Boa</span><span>91 – Ótima</span>
+              </div>
+              <p style="font-size:0.7rem;color:var(--text-dim);margin-top:10px;line-height:1.6;">Calculado conforme metodologia NSF-WQI adaptada pela ANA. Última atualização automática às <strong style="color:var(--cyan)" id="iqa-time">15:04:12</strong>.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">Histórico de Conformidade — CONAMA 357</span></div>
+        <div class="panel-body" style="padding:12px;">
+          <canvas id="chart-compliance" height="100"></canvas>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">Recomendações Automáticas</span></div>
+        <div class="panel-body" style="padding:12px;">
+          <div style="font-size:0.72rem;line-height:1.8;">
+            <div style="display:flex;gap:8px;margin-bottom:8px;"><span style="color:var(--red)">●</span><span><strong>Turbidez elevada</strong> — Verificar possível ressuspensão de sedimentos. Reduzir velocidade dos propulsores. Notificar ANA automaticamente.</span></div>
+            <div style="display:flex;gap:8px;margin-bottom:8px;"><span style="color:var(--green)">●</span><span>DO₂ dentro dos parâmetros aceitos para a Classe II.</span></div>
+            <div style="display:flex;gap:8px;"><span style="color:var(--cyan)">●</span><span>Próximo relatório programado para envio automático ao IBAMA em 23:00.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- TAB: ALERTAS -->
+<div id="tab-alertas" class="tab-content" style="padding:20px;max-width:900px;margin:auto;">
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">Central de Alertas — Missão Atual</span>
+      <button class="act-btn cyan" style="padding:4px 12px;font-size:0.58rem;" onclick="clearAlerts()">Limpar Alertas</button>
+    </div>
+    <div id="alerts-list">
+      <div class="alert-item">
+        <div class="alert-icon">🔴</div>
+        <div class="alert-text">
+          <div class="alert-title">VIOLAÇÃO — Turbidez acima do Limite CONAMA 357</div>
+          <div class="alert-desc">Medição: 18.4 NTU · Limite Cl. II: 15 NTU · Excedente: +3.4 NTU · Notificação ANA enviada automaticamente</div>
+        </div>
+        <div class="alert-time">15:02:44</div>
+      </div>
+      <div class="alert-item">
+        <div class="alert-icon">🟡</div>
+        <div class="alert-text">
+          <div class="alert-title">ATENÇÃO — Espécie Vulnerável Detectada (VU)</div>
+          <div class="alert-desc">Mitsukurina owstoni (Tubarão-duende) · 1 indivíduo · Prof: 450m · Registro enviado ao SISBIO/ICMBio</div>
+        </div>
+        <div class="alert-time">14:52:30</div>
+      </div>
+      <div class="alert-item">
+        <div class="alert-icon">🔵</div>
+        <div class="alert-text">
+          <div class="alert-title">INFO — Relatório de Monitoramento Enviado ao IBAMA</div>
+          <div class="alert-desc">Processo nº 02001.042873/2024 · Dados de 12 sensores transmitidos · Conformidade: 97.3%</div>
+        </div>
+        <div class="alert-time">12:00:00</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: RELATÓRIOS -->
+<div id="tab-relatorios" class="tab-content" style="padding:20px;max-width:1000px;margin:auto;">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">Gerar Relatório Oficial</span></div>
+      <div class="panel-body" style="padding:16px;">
+        <div class="report-field">
+          <label class="field-label">Tipo de Relatório</label>
+          <select class="field-select" id="rep-tipo">
+            <option>RPPN — Relatório de Monitoramento de UC</option>
+            <option>IBAMA — Auto de Infração / Notificação</option>
+            <option>ANA — Boletim de Qualidade de Água</option>
+            <option>ICMBio — Ficha de Registro SISBIO</option>
+            <option>PRAD — Plano de Recuperação</option>
+          </select>
+        </div>
+        <div class="report-field">
+          <label class="field-label">Órgão Destinatário</label>
+          <select class="field-select">
+            <option>IBAMA — Instituto Brasileiro do Meio Ambiente</option>
+            <option>ANA — Agência Nacional de Águas</option>
+            <option>ICMBio — Instituto Chico Mendes</option>
+            <option>INEMA — Bahia</option>
+            <option>SEMAD — Goiás</option>
+            <option>SEMA — Mato Grosso</option>
+          </select>
+        </div>
+        <div class="modal-grid">
+          <div class="report-field">
+            <label class="field-label">Código da Missão</label>
+            <input type="text" class="field-input" value="HP-2024-0042" />
+          </div>
+          <div class="report-field">
+            <label class="field-label">Pesquisador Responsável</label>
+            <input type="text" class="field-input" placeholder="Nome completo" />
+          </div>
+          <div class="report-field">
+            <label class="field-label">CPF / SIAPE</label>
+            <input type="text" class="field-input" placeholder="000.000.000-00" />
+          </div>
+          <div class="report-field">
+            <label class="field-label">Nº Autorização SISBIO</label>
+            <input type="text" class="field-input" placeholder="SISBIO-XXXXXX" />
+          </div>
+        </div>
+        <div class="report-field">
+          <label class="field-label">Observações Adicionais</label>
+          <textarea class="field-input" rows="4" placeholder="Anotações de campo, observações sobre condições ambientais..."></textarea>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:4px;">
+          <button class="modal-btn primary" onclick="generateReport()">↑ Transmitir ao Órgão</button>
+          <button class="modal-btn secondary" onclick="previewReport()">Preview PDF</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">Histórico de Transmissões</span></div>
+        <div class="panel-body" style="padding:0;">
+          <table class="species-table">
+            <thead>
+              <tr><th>Data/Hora</th><th>Tipo</th><th>Órgão</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="font-family:var(--mono);font-size:0.65rem;">24/05/24 12:00</td>
+                <td style="font-size:0.7rem;">Qualidade Água</td>
+                <td><span class="agency-badge badge-ibama" style="font-size:0.55rem;">IBAMA</span></td>
+                <td><span class="status-tag tag-lc" style="font-size:0.55rem;">RECEBIDO</span></td>
+              </tr>
+              <tr>
+                <td style="font-family:var(--mono);font-size:0.65rem;">24/05/24 14:52</td>
+                <td style="font-size:0.7rem;">Fauna Ameaçada</td>
+                <td><span class="agency-badge badge-icmbio" style="font-size:0.55rem;">ICMBio</span></td>
+                <td><span class="status-tag tag-lc" style="font-size:0.55rem;">RECEBIDO</span></td>
+              </tr>
+              <tr>
+                <td style="font-family:var(--mono);font-size:0.65rem;">24/05/24 15:02</td>
+                <td style="font-size:0.7rem;">Violação CONAMA</td>
+                <td><span class="agency-badge badge-ana" style="font-size:0.55rem;">ANA</span></td>
+                <td><span class="status-tag tag-vu" style="font-size:0.55rem;">PROCESSANDO</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">Snapshot de Dados — Transmissão</span></div>
+        <div class="panel-body" style="padding:12px;">
+          <div class="data-snapshot" style="margin:0;">
+            <div class="snapshot-row"><span class="snapshot-key">Missão</span><span class="snapshot-val">HP-2024-0042</span></div>
+            <div class="snapshot-row"><span class="snapshot-key">Duração</span><span class="snapshot-val" id="rep-duracao">00:43:17</span></div>
+            <div class="snapshot-row"><span class="snapshot-key">Profundidade máx.</span><span class="snapshot-val" id="rep-maxdepth">452.1 m</span></div>
+            <div class="snapshot-row"><span class="snapshot-key">Espécies registradas</span><span class="snapshot-val">5</span></div>
+            <div class="snapshot-row"><span class="snapshot-key">Violações CONAMA</span><span class="snapshot-val" style="color:var(--amber)">1 (Turbidez)</span></div>
+            <div class="snapshot-row"><span class="snapshot-key">Conformidade Geral</span><span class="snapshot-val" style="color:var(--green)">97.3%</span></div>
+            <div class="snapshot-row"><span class="snapshot-key">Hash SHA-256</span><span class="snapshot-val" style="font-size:0.55rem;" id="rep-hash">a3f8c2...</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ REPORT MODAL ══════════ -->
+<div class="modal-overlay" id="report-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">Laudo de Notificação — IBAMA</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="data-snapshot">
+        <div class="snapshot-row"><span class="snapshot-key">Processo IBAMA</span><span class="snapshot-val">02001.042873/2024</span></div>
+        <div class="snapshot-row"><span class="snapshot-key">Missão</span><span class="snapshot-val">HP-2024-0042</span></div>
+        <div class="snapshot-row"><span class="snapshot-key">Profundidade</span><span class="snapshot-val" id="modal-depth">--</span></div>
+        <div class="snapshot-row"><span class="snapshot-key">pH</span><span class="snapshot-val" id="modal-ph">--</span></div>
+        <div class="snapshot-row"><span class="snapshot-key">DO₂</span><span class="snapshot-val" id="modal-o2">--</span></div>
+        <div class="snapshot-row"><span class="snapshot-key">Turbidez</span><span class="snapshot-val" id="modal-turb" style="color:var(--amber)">--</span></div>
+        <div class="snapshot-row"><span class="snapshot-key">Temperatura</span><span class="snapshot-val" id="modal-temp">--</span></div>
+        <div class="snapshot-row"><span class="snapshot-key">Coord. GPS</span><span class="snapshot-val">-15.7801°S 56.0972°W</span></div>
+        <div class="snapshot-row"><span class="snapshot-key">Data/Hora</span><span class="snapshot-val" id="modal-time">--</span></div>
+      </div>
+      <div class="report-field">
+        <label class="field-label">Observações Técnicas</label>
+        <textarea class="field-input" rows="3" placeholder="Descreva as condições observadas..."></textarea>
+      </div>
+      <div class="report-field">
+        <label class="field-label">Tipo de Ocorrência</label>
+        <select class="field-select">
+          <option>Monitoramento Rotineiro</option>
+          <option>Violação Parâmetro CONAMA</option>
+          <option>Espécie Ameaçada Detectada</option>
+          <option>Evento Anômalo</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn primary" onclick="submitReport()">↑ Transmitir ao IBAMA</button>
+      <button class="modal-btn secondary" onclick="closeModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════
+const state = {
+  depth: 450.3,
+  temp: 4.2,
+  o2: 6.3,
+  sal: 34.8,
+  turb: 18.4,
+  ph: 7.4,
+  cond: 52.1,
+  baro: 45.4,
+  bat: 87.0,
+  orp: 182,
+  tds: 330,
+  no3: 2.1,
+  lightOn: false,
+  missionStart: Date.now() - (43 * 60 + 17) * 1000,
+  maxDepth: 452.1,
+  speciesCount: 5,
+};
+
+const histTemp = Array.from({length:60}, () => 4.2 + (Math.random()-0.5)*0.4);
+const histO2   = Array.from({length:60}, () => 6.3 + (Math.random()-0.5)*0.5);
+
+// ═══════════════════════════════════════
+//  TABS
+// ═══════════════════════════════════════
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ═══════════════════════════════════════
+//  CLOCK
+// ═══════════════════════════════════════
+function updateClock() {
+  const now = new Date();
+  document.getElementById('sys-clock').textContent = now.toLocaleTimeString('pt-BR');
+  // Mission time
+  const elapsed = Math.floor((Date.now() - state.missionStart) / 1000);
+  const h = String(Math.floor(elapsed/3600)).padStart(2,'0');
+  const m = String(Math.floor((elapsed%3600)/60)).padStart(2,'0');
+  const s = String(elapsed%60).padStart(2,'0');
+  const mt = `${h}:${m}:${s}`;
+  const hudTime = document.getElementById('hud-time');
+  if(hudTime) hudTime.textContent = mt;
+  const repDur = document.getElementById('rep-duracao');
+  if(repDur) repDur.textContent = mt;
+}
+
+setInterval(updateClock, 1000);
+updateClock();
+
+// ═══════════════════════════════════════
+//  SENSOR SIMULATION
+// ═══════════════════════════════════════
+function osc(val, amp, min, max) {
+  const v = val + (Math.random()-0.5)*amp;
+  return Math.max(min, Math.min(max, v));
+}
+
+function updateSensors() {
+  state.depth = osc(state.depth, 0.15, 400, 600);
+  state.temp  = osc(state.temp,  0.05, 2, 6);
+  state.o2    = osc(state.o2,    0.08, 4, 8);
+  state.sal   = osc(state.sal,   0.02, 33, 36);
+  state.turb  = osc(state.turb,  0.2,  10, 25);
+  state.ph    = osc(state.ph,    0.03, 6.5, 8.5);
+  state.cond  = osc(state.cond,  0.3,  45, 60);
+  state.baro  = parseFloat((state.depth * 0.1013).toFixed(1));
+  state.bat   = Math.max(0, state.bat - 0.005);
+  state.orp   = Math.round(osc(state.orp, 2, 150, 250));
+  state.tds   = Math.round(osc(state.tds, 2, 300, 380));
+  state.no3   = osc(state.no3, 0.05, 0.5, 8);
+
+  if(state.depth > state.maxDepth) state.maxDepth = state.depth;
+
+  // Update DOM
+  const set = (id, val, decimals=1) => {
+    const el = document.getElementById(id);
+    if(el) el.textContent = typeof decimals === 'number' ? val.toFixed(decimals) : val;
+  };
+
+  set('sv-depth', state.depth);
+  set('sv-temp', state.temp);
+  set('sv-o2', state.o2);
+  set('sv-sal', state.sal);
+  set('sv-turb', state.turb);
+  set('sv-ph', state.ph);
+  set('sv-cond', state.cond);
+  set('sv-baro', state.baro);
+  set('sv-bat', state.bat);
+  document.getElementById('sv-orp').textContent = (state.orp >= 0 ? '+' : '') + state.orp;
+  set('sv-tds', state.tds, 0);
+  set('sv-no3', state.no3);
+
+  // HUD
+  const h = (id,val,d=1) => { const e=document.getElementById(id); if(e) e.textContent=val.toFixed(d); };
+  h('hud-depth', state.depth);
+  h('hud-temp', state.temp);
+  h('hud-o2', state.o2);
+  h('hud-sal', state.sal);
+  h('hud-baro', state.baro);
+  if(document.getElementById('hud-bat')) document.getElementById('hud-bat').textContent = state.bat.toFixed(0);
+
+  // Depth fill
+  const pct = Math.min(100, (state.depth / 600) * 100);
+  const df = document.getElementById('depth-fill');
+  if(df) df.style.height = pct + '%';
+
+  // Sensor card states
+  setSensorState('s-turb', state.turb > 15 ? (state.turb > 20 ? 'alert' : 'warn') : 'normal');
+  setSensorState('s-bat', state.bat < 15 ? 'alert' : state.bat < 30 ? 'warn' : 'normal');
+  setSensorState('s-o2', state.o2 < 5 ? 'alert' : state.o2 < 5.5 ? 'warn' : 'normal');
+  setSensorState('s-ph', (state.ph < 6 || state.ph > 9) ? 'alert' : 'normal');
+
+  // CONAMA compliance panel
+  const qph = document.getElementById('q-ph'); if(qph) qph.textContent = state.ph.toFixed(1);
+  const qo2 = document.getElementById('q-o2'); if(qo2) qo2.textContent = state.o2.toFixed(1)+' mg/L';
+  const qt  = document.getElementById('q-turb'); if(qt) qt.textContent = state.turb.toFixed(1)+' NTU';
+  const qn  = document.getElementById('q-no3'); if(qn) qn.textContent = state.no3.toFixed(1)+' mg/L';
+  const qte = document.getElementById('q-temp'); if(qte) qte.textContent = state.temp.toFixed(1)+'°C';
+
+  // ANA status
+  const o2s = document.getElementById('o2-status');
+  if(o2s) { o2s.textContent = state.o2 >= 5 ? '✓ CONFORME' : '✗ VIOLAÇÃO'; o2s.style.color = state.o2>=5?'var(--green)':'var(--red)'; }
+  const phs = document.getElementById('ph-status');
+  if(phs) { phs.textContent = (state.ph>=6&&state.ph<=9) ? '✓ CONFORME' : '✗ VIOLAÇÃO'; phs.style.color = (state.ph>=6&&state.ph<=9)?'var(--green)':'var(--red)'; }
+
+  // Report snapshot
+  const rmd = document.getElementById('rep-maxdepth');
+  if(rmd) rmd.textContent = state.maxDepth.toFixed(1)+' m';
+
+  // Sparklines
+  histTemp.shift(); histTemp.push(state.temp);
+  histO2.shift(); histO2.push(state.o2);
+  drawSparkline('chart-temp', histTemp, 'var(--cyan)', 3, 7);
+  drawSparkline('chart-o2', histO2, 'var(--green)', 4, 9);
+
+  // Alerts auto
+  if(state.turb > 15) logConsole(`Turbidez: ${state.turb.toFixed(1)} NTU — acima do limite CONAMA 357 (15 NTU)`, 'warn');
+  if(state.bat < 20) logConsole(`CRÍTICO: Bateria em ${state.bat.toFixed(0)}%`, 'err');
+}
+
+function setSensorState(id, state) {
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.className = 'sensor ' + state;
+}
+
+setInterval(updateSensors, 1200);
+
+// ═══════════════════════════════════════
+//  SPARKLINE CHART
+// ═══════════════════════════════════════
+function drawSparkline(canvasId, data, color, yMin, yMax) {
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth || 300;
+  const H = 60;
+  canvas.width = W;
+  canvas.height = H;
+  ctx.clearRect(0,0,W,H);
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for(let i=0;i<=3;i++) {
+    const y = (i/3)*H;
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+  }
+
+  // Line
+  const pts = data.map((v,i)=>({
+    x: (i/(data.length-1))*W,
+    y: H - ((v - yMin)/(yMax - yMin)) * H
+  }));
+
+  // Fill
+  const grad = ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0, color.replace('var(','').replace(')','') === '--cyan' ? 'rgba(0,212,232,0.3)' : 'rgba(0,232,154,0.3)');
+  grad.addColorStop(1, 'transparent');
+
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, H);
+  pts.forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.lineTo(pts[pts.length-1].x, H);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  pts.forEach((p,i) => i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y));
+  ctx.strokeStyle = color === 'var(--cyan)' ? '#00d4e8' : '#00e89a';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
+// Compliance chart (static styled)
+function drawComplianceChart() {
+  const c = document.getElementById('chart-compliance');
+  if(!c) return;
+  const ctx = c.getContext('2d');
+  const W = c.offsetWidth || 280;
+  const H = 100;
+  c.width = W;
+  c.height = H;
+  const vals = [98,97,96,98,99,97,95,96,97,98,96,97];
+  const xStep = W / vals.length;
+
+  ctx.clearRect(0,0,W,H);
+  vals.forEach((v,i) => {
+    const barH = ((v-90)/10)*H*0.8;
+    const x = i*xStep + xStep*0.1;
+    const bw = xStep*0.8;
+    const color = v >= 97 ? '#00e89a' : v >= 95 ? '#f5a623' : '#ff4757';
+    ctx.fillStyle = color+'33';
+    ctx.fillRect(x, H-barH-10, bw, barH);
+    ctx.fillStyle = color;
+    ctx.fillRect(x, H-barH-12, bw, 2);
+  });
+}
+
+// ═══════════════════════════════════════
+//  CONSOLE
+// ═══════════════════════════════════════
+let lastLog = '';
+function logConsole(msg, type='') {
+  if(msg === lastLog) return;
+  lastLog = msg;
+  const box = document.getElementById('console-box');
+  if(!box) return;
+  const now = new Date().toLocaleTimeString('pt-BR');
+  const d = document.createElement('div');
+  d.className = 'log-line' + (type?' '+type:'');
+  d.innerHTML = `<span class="log-ts">[${now}]</span>${msg}`;
+  box.prepend(d);
+  if(box.children.length > 50) box.removeChild(box.lastChild);
+}
+
+// ═══════════════════════════════════════
+//  CONTROLS
+// ═══════════════════════════════════════
+function cmd(dir) {
+  const labels = {N:'Norte',S:'Sul',L:'Leste',O:'Oeste'};
+  logConsole(`Propulsor → ${labels[dir]} ativado`, 'info');
+}
+
+function thruster(name, val) {
+  document.getElementById('th-'+name).textContent = val;
+  if(Math.abs(val) > 0) logConsole(`Propulsor ${name}: ${val}%`);
+}
+
+function toggleLight() {
+  state.lightOn = !state.lightOn;
+  logConsole(`Lanternas ${state.lightOn ? 'ATIVAS' : 'DESLIGADAS'}`, state.lightOn ? 'info' : 'sys');
+}
+
+function captureSnapshot() {
+  const ts = new Date().toLocaleTimeString('pt-BR');
+  logConsole(`Snapshot capturado — ${ts} · Prof: ${state.depth.toFixed(1)}m · Armazenado`, 'info');
+}
+
+function emergencySurface() {
+  logConsole('PROTOCOLO DE EMERGÊNCIA — RETORNO À SUPERFÍCIE INICIADO', 'err');
+  const iv = setInterval(() => {
+    if(state.depth <= 0) {
+      clearInterval(iv);
+      logConsole('Drone na superfície. Missão encerrada.');
+    } else {
+      state.depth -= 20;
+      if(state.depth < 0) state.depth = 0;
+    }
+  }, 200);
+}
+
+// ═══════════════════════════════════════
+//  SPECIES
+// ═══════════════════════════════════════
+const iucnOpts = ['LC','NT','VU','EN','CR'];
+const iucnColors = {LC:'tag-lc',NT:'tag-nt',VU:'tag-vu',EN:'tag-en',CR:'tag-cr'};
+
+function logSpecies() {
+  const popName = prompt('Nome popular da espécie:');
+  if(!popName) return;
+  const sciName = prompt('Nome científico (Gênero espécie):') || 'Sp. indet.';
+  const family  = prompt('Família taxonômica:') || '—';
+  const iucn    = prompt('Status IUCN (LC/NT/VU/EN/CR):')?.toUpperCase() || 'LC';
+  const qty     = prompt('Número de indivíduos observados:') || '1';
+
+  const tbody = document.getElementById('species-tbody');
+  if(!tbody) return;
+  state.speciesCount++;
+  const id = String(state.speciesCount).padStart(3,'0');
+  const ts = new Date().toLocaleTimeString('pt-BR');
+  const tagClass = iucnColors[iucn] || 'tag-new';
+
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td style="color:var(--text-dim);font-family:var(--mono);font-size:0.65rem;">${id}</td>
+    <td><span class="pop-name">${popName}</span></td>
+    <td><span class="sci-name">${sciName}</span></td>
+    <td style="font-size:0.65rem;color:var(--text-dim)">${family}</td>
+    <td><span class="status-tag ${tagClass}">${iucn}</span></td>
+    <td style="font-family:var(--mono);font-size:0.72rem;">${qty}</td>
+    <td style="font-family:var(--mono);font-size:0.72rem;">${state.depth.toFixed(0)} m</td>
+    <td style="font-family:var(--mono);font-size:0.65rem;color:var(--text-dim)">${ts}</td>
+  `;
+  tbody.prepend(tr);
+
+  const sc = document.getElementById('stat-species');
+  if(sc) sc.textContent = state.speciesCount;
+
+  logConsole(`Fauna catalogada: ${sciName} (${iucn}) · ${qty} ind. · ${state.depth.toFixed(0)}m`, 'info');
+
+  if(['VU','EN','CR'].includes(iucn)) {
+    logConsole(`NOTIFICAÇÃO SISBIO: ${sciName} — Status ${iucn} — Transmitindo ao ICMBio...`, 'warn');
+  }
+}
+
+// ═══════════════════════════════════════
+//  REPORT MODAL
+// ═══════════════════════════════════════
+function openReport() {
+  const now = new Date();
+  document.getElementById('modal-depth').textContent = state.depth.toFixed(1) + ' m';
+  document.getElementById('modal-ph').textContent = state.ph.toFixed(1);
+  document.getElementById('modal-o2').textContent = state.o2.toFixed(1) + ' mg/L';
+  document.getElementById('modal-turb').textContent = state.turb.toFixed(1) + ' NTU';
+  document.getElementById('modal-temp').textContent = state.temp.toFixed(1) + '°C';
+  document.getElementById('modal-time').textContent = now.toLocaleString('pt-BR');
+  document.getElementById('report-modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('report-modal').classList.remove('open');
+}
+
+function submitReport() {
+  logConsole('Laudo transmitido ao IBAMA · Processo nº 02001.042873/2024', 'info');
+  closeModal();
+}
+
+function generateReport() {
+  const tipo = document.getElementById('rep-tipo').value;
+  logConsole(`Relatório gerado: "${tipo}" — Aguardando transmissão...`, 'info');
+  setTimeout(() => logConsole('Transmissão concluída com protocolo TLS 1.3 · Hash SHA-256 registrado', 'info'), 1200);
+}
+
+function previewReport() {
+  logConsole('Gerando preview PDF — aguarde...', 'sys');
+}
+
+function clearAlerts() {
+  document.getElementById('alerts-list').innerHTML = '<div class="empty-state">Nenhum alerta ativo.</div>';
+  document.getElementById('badge-alert').textContent = '0';
+  document.getElementById('badge-alert').style.display = 'none';
+}
+
+function exportBio() {
+  logConsole('Exportando catálogo biológico em CSV — Formato SISBIO', 'info');
+}
+
+// ═══════════════════════════════════════
+//  KEYBOARD
+// ═══════════════════════════════════════
+document.addEventListener('keydown', e => {
+  switch(e.key) {
+    case 'ArrowUp':    cmd('N'); break;
+    case 'ArrowDown':  cmd('S'); break;
+    case 'ArrowLeft':  cmd('O'); break;
+    case 'ArrowRight': cmd('L'); break;
+    case 'l':          toggleLight(); break;
+    case 'c':          captureSnapshot(); break;
+    case 'Escape':     closeModal(); break;
+  }
+});
+
+// ═══════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════
+window.addEventListener('load', () => {
+  updateSensors();
+  setTimeout(drawComplianceChart, 100);
+});
+
+// IQA time updater
+setInterval(() => {
+  const el = document.getElementById('iqa-time');
+  if(el) el.textContent = new Date().toLocaleTimeString('pt-BR');
+}, 60000);
+
+// Hash updater
+setInterval(() => {
+  const chars = '0123456789abcdef';
+  let h = '';
+  for(let i=0;i<6;i++) h += chars[Math.floor(Math.random()*16)];
+  const el = document.getElementById('rep-hash');
+  if(el) el.textContent = h + '...';
+}, 5000);
+
+</script>
+</body>
+</html>
